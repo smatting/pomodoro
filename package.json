@@ -1,0 +1,39 @@
+{
+  "name": "pomodoro",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api.js",
+  "dependencies": {
+    "ace-css": "1.1",
+    "css-loader": "^0.26.1",
+    "elm-webpack-loader": "^4.2.0",
+    "file-loader": "^0.10.0",
+    "font-awesome": "4",
+    "foreman": "^2.0.0",
+    "json-server": "0.9.5",
+    "purecss": "^1.0.0",
+    "style-loader": "^0.13.1",
+    "url-loader": "^0.5.7",
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.4.0"
+  },
+  "devDependencies": {
+    "webpack-cli": "^2.0.10"
+  },
+  "scripts": {
+    "api": "node api.js",
+    "build": "webpack",
+    "client": "webpack-dev-server --port 3000",
+    "start": "nf start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sporto/elm-tutorial-app.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sporto/elm-tutorial-app/issues"
+  },
+  "homepage": "https://github.com/sporto/elm-tutorial-app#readme"
+}
