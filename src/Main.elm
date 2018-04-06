@@ -14,6 +14,9 @@ import Task
 import Audio
 
 
+pomodoroLength : Float
+pomodoroLength = 3 * Time.second
+
 -- MODEL
 
 type alias Model = {
@@ -24,7 +27,8 @@ type alias Model = {
 init : (Model, Cmd Msg)
 init =
     let model = 
-        {tPomodoroEnd = Nothing, secsLeft = Nothing}
+        {tPomodoroEnd = Nothing,
+         secsLeft = Nothing }
     in (model, Cmd.none)
 
 format2digits : Int -> String
@@ -47,17 +51,22 @@ isJust x =
 
 -- VIEW
 view : Model -> Html Msg
-view model = div [H.class "content"] [
-    div [ H.class "progressbar" ] [
-        span [ H.class "progress" ] [],
-        div [ H.class "timer-wrapper" ] [
-            div [ H.class "timer" ] [(text (formatMillis (withDefault 0 model.secsLeft)))]
-        ]
-    ],
-    if isJust model.tPomodoroEnd then
-    button [onClick ResetPomodoro] [ text "Reset Timer" ]
-    else button [onClick StartPomodoro] [ text "Start Pomodoro" ]
-     ]
+view model =
+    let progress = 100 * (Maybe.withDefault 0.3 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft))
+    in
+    div [H.class "content"] [
+       div [ H.class "progressbar" ] [
+           span [ H.class "progress", H.style [("width", (toString progress) ++ "%" )] ] [],
+           div [ H.class "timer-wrapper" ] [
+               div [ H.class "timer" ] [(text (formatMillis (withDefault 0 model.secsLeft)))]
+           ]
+       ],
+       div [] [
+           if isJust model.tPomodoroEnd then
+           button [onClick ResetPomodoro] [ text "Reset Timer" ]
+           else button [onClick StartPomodoro] [ text "Start Pomodoro" ]
+       ]
+    ]
 
 type Msg
     = SetTPomodoro Time Float
@@ -67,7 +76,7 @@ type Msg
 
 setPomodoro : Time -> Msg
 setPomodoro now =
-    let secsLeft = 25 * Time.minute
+    let secsLeft = pomodoroLength
         t = now + secsLeft
     in SetTPomodoro t secsLeft
 

@@ -1,5 +1,10 @@
+.body {
+    /* background: url(background.png); */
+}
+
 .content {
-    background-color: gray;
+    /* background-color: gray; */
+
     width: 90%;
     margin-left: auto;
     margin-right: auto;
@@ -10,6 +15,8 @@
 .progressbar {
     position: relative;
     display: inline-block;
+
+    padding: 0.1vw;
 
 
     width: 90%;
@@ -26,17 +33,18 @@
 .progress {
     display: block;
     position: absolute;
-    z-index: 0;
+    z-index: 1;
     height: 20vh;
     width: 50%;
 
-    border-radius: 0.5vw;
+    border-radius: 0.8vw;
 
-    background-color: red;
+
+    background-color: rgb(45, 86, 153);
 }
 
 .timer {
-    background-color: white;
+    /* background-color: white; */
     border-radius: 1vh;
 }
 
@@ -45,9 +53,11 @@
     position: relative;
     z-index: 2;
 
-    font-size: 15vh;
-    font-family: monospace;
-    margin-top: 2vh;
-    margin-bottom: 2vh;
+    height: 20vh;
+    line-height: 20vh;
+
+    /* color: white; */
+    font-size: 20vh;
+    font-family: 'VT323', monospace;
     /* border: 1px solid red; */
 }
