@@ -1,12 +1,12 @@
 module Main exposing (..)
-import Html exposing (Html, button, div, text, program)
+import Html exposing (Html, button, div, text, program, span)
 import Html.Events exposing (onClick, on, onWithOptions, onInput)
 import Html.Attributes as H exposing (..)
-import Json.Decode as Decode
-import Mouse exposing (Position)
-import Svg
-import Svg.Attributes as S exposing (..)
-import Path.LowLevel as LL exposing (Coordinate)
+-- import Json.Decode as Decode
+-- import Mouse exposing (Position)
+-- import Svg
+-- import Svg.Attributes as S exposing (..)
+-- import Path.LowLevel as LL exposing (Coordinate)
 import Time exposing (Time, now)
 import Maybe exposing (withDefault)
 import Task
@@ -39,20 +39,35 @@ formatMillis dt =
         seconds = n % 60
     in (format2digits minutes) ++ ":" ++ (format2digits seconds)
 
+isJust : Maybe a -> Bool
+isJust x =
+    case x of
+    Just _ -> True
+    Nothing -> False
+
 -- VIEW
 view : Model -> Html Msg
-view model = div [] [
-    div [ H.class "timer" ] [(text (formatMillis (withDefault 0 model.secsLeft)))],
-    button [onClick StartPomodoro] [ text "Start Pomodoro" ] ]
+view model = div [H.class "content"] [
+    div [ H.class "progressbar" ] [
+        span [ H.class "progress" ] [],
+        div [ H.class "timer-wrapper" ] [
+            div [ H.class "timer" ] [(text (formatMillis (withDefault 0 model.secsLeft)))]
+        ]
+    ],
+    if isJust model.tPomodoroEnd then
+    button [onClick ResetPomodoro] [ text "Reset Timer" ]
+    else button [onClick StartPomodoro] [ text "Start Pomodoro" ]
+     ]
 
 type Msg
     = SetTPomodoro Time Float
     | StartPomodoro
+    | ResetPomodoro
     | Tick Time
 
 setPomodoro : Time -> Msg
 setPomodoro now =
-    let secsLeft = 1 * Time.second
+    let secsLeft = 25 * Time.minute
         t = now + secsLeft
     in SetTPomodoro t secsLeft
 
@@ -71,6 +86,7 @@ update msg model =
         SetTPomodoro t secsLeft -> ({model | tPomodoroEnd = Just t, secsLeft = Just secsLeft}, Cmd.none)
         StartPomodoro -> (model, Task.perform setPomodoro now)
         Tick now -> updateTick now model
+        ResetPomodoro -> ({model | tPomodoroEnd = Nothing, secsLeft = Nothing}, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -78,6 +94,7 @@ subscriptions model =
         Just t -> Sub.batch [ Time.every Time.second Tick ]
         Nothing -> Sub.none
 
+main : Program Never Model Msg
 main =
     program
         { init = init
