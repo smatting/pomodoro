@@ -4,9 +4,9 @@ import Html.Events exposing (onClick, on, onWithOptions, onInput)
 import Html.Attributes as H exposing (..)
 -- import Json.Decode as Decode
 -- import Mouse exposing (Position)
--- import Svg
--- import Svg.Attributes as S exposing (..)
--- import Path.LowLevel as LL exposing (Coordinate)
+import Svg
+import Svg.Attributes as S exposing (..)
+import Path.LowLevel as LL exposing (Coordinate)
 import Time exposing (Time, now)
 import Maybe exposing (withDefault)
 import Task
@@ -15,7 +15,7 @@ import Audio
 
 
 pomodoroLength : Float
-pomodoroLength = 3 * Time.second
+pomodoroLength = 10 * Time.second
 
 -- MODEL
 
@@ -49,14 +49,50 @@ isJust x =
     Just _ -> True
     Nothing -> False
 
+
+-- wave : Coordinate -> Coordinate -> Coordinate -> Coordinate -> Svg.Svg Msg
+-- wave endPoint1 controlPoint1 controlPoint2 endPoint2 =
+--     let
+--         pathSpec = LL.toString [{moveto =  LL.MoveTo LL.Absolute endPoint1,
+--                                  drawtos = [LL.CurveTo LL.Absolute [(controlPoint1, controlPoint2, endPoint2)]] } ]
+-- in Svg.path [ d pathSpec, stroke "black", fill "none", strokeWidth "3", strokeLinecap "round"] []
+
+
+-- def f(a,r): return (r*math.cos(a), -r*math.sin(a)+r)
+
+                                    --  arcFlag = LL.SmallestArc,
+                                    --  direction = LL.CounterClockwise,
+
+svgArc : Float -> Float -> Html Msg
+svgArc clock radius =
+    let
+        rad = -2.0 * pi * (clock / 12.0 + 0.75)
+        x = radius * cos rad
+        y = radius * -1.0 * sin rad + radius
+        arcFlag = if clock < 6.0 then LL.SmallestArc else LL.LargestArc
+        direction = LL.CounterClockwise
+        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 50),
+                                 drawtos = [LL.EllipticalArc LL.Relative [{
+                                     radii = (200, 200),
+                                     xAxisRotate = 0,
+                                     arcFlag = arcFlag,
+                                     direction = direction,
+                                     target = (x, y)
+                                 }]]}]
+    in Svg.svg
+       [S.id "progress-circle", S.width "500", S.height "500", S.viewBox "0 0 500 500"]
+       [Svg.path [d pathSpec, stroke "black", fill "none", strokeWidth "3", strokeLinecap "round"] []]
+
+-- span [ H.class "progress", H.style [("width", (toString progress) ++ "%" )] ] [],
+
 -- VIEW
 view : Model -> Html Msg
 view model =
-    let progress = 100 * (Maybe.withDefault 0.3 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft))
+    let progress = Maybe.withDefault 0.9999 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft)
     in
     div [H.class "content"] [
-       div [ H.class "progressbar" ] [
-           span [ H.class "progress", H.style [("width", (toString progress) ++ "%" )] ] [],
+       div [ onClick StartPomodoro, H.class "tomato" ] [
+           svgArc (progress * 12) 200,
            div [ H.class "timer-wrapper" ] [
                div [ H.class "timer" ] [(text (formatMillis (withDefault 0 model.secsLeft)))]
            ]
@@ -64,7 +100,7 @@ view model =
        div [] [
            if isJust model.tPomodoroEnd then
            button [onClick ResetPomodoro] [ text "Reset Timer" ]
-           else button [onClick StartPomodoro] [ text "Start Pomodoro" ]
+           else span [][]
        ]
     ]
 
@@ -100,7 +136,7 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.tPomodoroEnd of
-        Just t -> Sub.batch [ Time.every Time.second Tick ]
+        Just t -> Sub.batch [ Time.every (0.1 * Time.second) Tick ]
         Nothing -> Sub.none
 
 main : Program Never Model Msg
