@@ -15,7 +15,7 @@ import Audio
 
 
 pomodoroLength : Float
-pomodoroLength = 10 * Time.second
+pomodoroLength = 25 * Time.minute
 
 -- MODEL
 
@@ -71,7 +71,7 @@ svgArc clock radius =
         y = radius * -1.0 * sin rad + radius
         arcFlag = if clock < 6.0 then LL.SmallestArc else LL.LargestArc
         direction = LL.CounterClockwise
-        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 50),
+        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (257, 50),
                                  drawtos = [LL.EllipticalArc LL.Relative [{
                                      radii = (200, 200),
                                      xAxisRotate = 0,
@@ -81,7 +81,7 @@ svgArc clock radius =
                                  }]]}]
     in Svg.svg
        [S.id "progress-circle", S.width "500", S.height "500", S.viewBox "0 0 500 500"]
-       [Svg.path [d pathSpec, stroke "black", fill "none", strokeWidth "3", strokeLinecap "round"] []]
+       [Svg.path [d pathSpec, stroke "rgba(200,0,0,0.7)", fill "none", strokeWidth "10", strokeLinecap "round"] []]
 
 -- span [ H.class "progress", H.style [("width", (toString progress) ++ "%" )] ] [],
 
@@ -94,14 +94,14 @@ view model =
        div [ onClick StartPomodoro, H.class "tomato" ] [
            svgArc (progress * 12) 200,
            div [ H.class "timer-wrapper" ] [
-               div [ H.class "timer" ] [(text (formatMillis (withDefault 0 model.secsLeft)))]
+               div [ H.class "timer" ] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
            ]
-       ],
-       div [] [
-           if isJust model.tPomodoroEnd then
-           button [onClick ResetPomodoro] [ text "Reset Timer" ]
-           else span [][]
        ]
+    --    div [] [
+    --        if isJust model.tPomodoroEnd then
+    --        button [onClick ResetPomodoro] [ text "Reset Timer" ]
+    --        else span [][]
+    --    ]
     ]
 
 type Msg

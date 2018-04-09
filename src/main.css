@@ -5,21 +5,35 @@
     margin-right: auto;
 
     text-align: center;
+    line-height: 100vh;
 }
 
 .tomato {
+    line-height: 1em;
+    display: inline-block;
     position: relative;
 
-    background-image: url("dummytomato.jpg");
+    /* background-position: -60% 0%; */
+    background-repeat: no-repeat;
+    background-image: url("tomato-default.jpg");
     background-size: 100%;
+
     cursor: pointer;
 
     display: inline-block;
-    background-color: red;
-    width: 30vw;
-    height: 30vw;
+    width: 40vw;
+    height: 40vw;
 
-    border: 1px solid red;
+    /* border: 1px solid red; */
+
+}
+
+.tomato:hover {
+    background-image: url("tomato-active.jpg");
+}
+
+.tomato:active {
+    background-image: url("tomato-pressed.jpg");
 }
 
 #progress-circle {
@@ -32,7 +46,7 @@
 }
 
 .timer-wrapper {
-    line-height: 30vw;
+    line-height: 50vw;
 }
 
 .timer {
@@ -46,5 +60,5 @@
     padding: 0.1em;
 
     font-family: "Roboto Mono", monospace;
-    font-size: 8vh;
+    font-size: 5vw;
 }
