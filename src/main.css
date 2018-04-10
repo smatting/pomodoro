@@ -1,3 +1,12 @@
+body {
+    /* background-image: url('dust_@2X.png'); */
+    background-image: url('exclusive_paper_@2X.png');
+
+    /* background-image: url('lightpaperfibers_@2X.png'); */
+    /* background-image: url('debut_light_@2X.png'); */
+    /* background-image: url('gray_jean_@2X.jpg'); */
+}
+
 .content {
 
     width: 90%;
@@ -15,7 +24,7 @@
 
     /* background-position: -60% 0%; */
     background-repeat: no-repeat;
-    background-image: url("tomato-default.jpg");
+    background-image: url("tomato2-default.png");
     background-size: 100%;
 
     cursor: pointer;
@@ -28,12 +37,8 @@
 
 }
 
-.tomato:hover {
-    background-image: url("tomato-active.jpg");
-}
-
 .tomato:active {
-    background-image: url("tomato-pressed.jpg");
+    background-image: url("tomato2-pressed.png");
 }
 
 #progress-circle {
