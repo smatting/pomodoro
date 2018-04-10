@@ -8,6 +8,7 @@ body {
 }
 
 .content {
+    position: relative;
 
     width: 90%;
     margin-left: auto;
@@ -17,7 +18,11 @@ body {
     line-height: 100vh;
 }
 
-.tomato {
+.pomodoro.notrunning {
+    cursor: pointer;
+}
+
+.pomodoro {
     line-height: 1em;
     display: inline-block;
     position: relative;
@@ -27,7 +32,6 @@ body {
     background-image: url("tomato2-default.png");
     background-size: 100%;
 
-    cursor: pointer;
 
     display: inline-block;
     width: 40vw;
@@ -37,8 +41,16 @@ body {
 
 }
 
-.tomato:active {
+/* .tomato:hover {
     background-image: url("tomato2-pressed.png");
+} */
+
+.pomodoro.notrunning:active {
+    background-image: url("tomato2-pressed.png");
+}
+
+#progress-circle.notrunning {
+    visibility: hidden;
 }
 
 #progress-circle {
@@ -50,8 +62,21 @@ body {
     height: 100%;
 }
 
+.timer-wrapper.notrunning {
+    visibility: hidden;
+}
+
 .timer-wrapper {
-    line-height: 50vw;
+    line-height: 55vw;
+}
+
+.unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .timer {
@@ -66,4 +91,79 @@ body {
 
     font-family: "Roboto Mono", monospace;
     font-size: 5vw;
+}
+
+.buttons-lower.notrunning {
+    visibility: hidden;
+}
+
+.buttons-lower {
+    visibility: visible;
+    position: absolute;
+    bottom: 0.8vw;
+    left: 50%;
+    /* height: 1vw; */
+}
+
+.buttons-lower button {
+    width: 200px;
+    height: 40px;
+    margin-left: -100px;
+}
+
+.completed-pomodoros {
+    height: 15vw;
+    width: 100%;
+    text-align: left;
+
+    line-height: 3vw;
+
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+
+    /* background-color: gray; */
+}
+
+.completed-pomodoro {
+    display: inline-block;
+    width: 8vw;
+    height: 7vw;
+    /* background-color: red; */
+    margin-left: 0.3vw;
+
+    background-image: url("tomato2-default.png");
+    background-size: 100%;
+}
+
+.completed-pomodoro:nth-child(8n){
+    transform: rotate(10deg);
+}
+
+.completed-pomodoro:nth-child(8n+1){
+    transform: rotate(-20deg);
+}
+
+.completed-pomodoro:nth-child(8n+2){
+    transform: rotate(-8deg);
+}
+
+.completed-pomodoro:nth-child(8n+3){
+    transform: rotate(25deg);
+}
+
+.completed-pomodoro:nth-child(8n+4){
+    transform: rotate(2deg);
+}
+
+.completed-pomodoro:nth-child(8n+5){
+    transform: rotate(35deg);
+}
+
+.completed-pomodoro:nth-child(8n+6){
+    transform: rotate(0deg);
+}
+
+.completed-pomodoro:nth-child(8n+7){
+    transform: rotate(-2deg);
 }

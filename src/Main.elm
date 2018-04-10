@@ -16,19 +16,22 @@ import Audio
 
 pomodoroLength : Float
 pomodoroLength = 25 * Time.minute
+-- pomodoroLength = 2 * Time.second
 
 -- MODEL
 
 type alias Model = {
     tPomodoroEnd : Maybe Time,
-    secsLeft : Maybe Float
+    secsLeft : Maybe Float,
+    completedPomodoros : Int
 }
 
 init : (Model, Cmd Msg)
 init =
     let model = 
         {tPomodoroEnd = Nothing,
-         secsLeft = Nothing }
+         secsLeft = Nothing,
+         completedPomodoros = 0}
     in (model, Cmd.none)
 
 format2digits : Int -> String
@@ -63,15 +66,15 @@ isJust x =
                                     --  arcFlag = LL.SmallestArc,
                                     --  direction = LL.CounterClockwise,
 
-svgArc : Float -> Float -> Html Msg
-svgArc clock radius =
+svgArc : Bool -> Float -> Float -> Html Msg
+svgArc running clock radius =
     let
         rad = -2.0 * pi * (clock / 12.0 + 0.75)
         x = radius * cos rad
         y = radius * -1.0 * sin rad + radius
         arcFlag = if clock < 6.0 then LL.SmallestArc else LL.LargestArc
         direction = LL.CounterClockwise
-        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (257, 50),
+        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 50),
                                  drawtos = [LL.EllipticalArc LL.Relative [{
                                      radii = (200, 200),
                                      xAxisRotate = 0,
@@ -80,10 +83,14 @@ svgArc clock radius =
                                      target = (x, y)
                                  }]]}]
     in Svg.svg
-       [S.id "progress-circle", S.width "500", S.height "500", S.viewBox "0 0 500 500"]
+       [S.id "progress-circle", S.width "500", S.height "500", S.viewBox "0 0 500 500", S.class (if running then "running" else "notrunning") ]
        [Svg.path [d pathSpec, stroke "rgba(200,0,0,0.7)", fill "none", strokeWidth "10", strokeLinecap "round"] []]
 
 -- span [ H.class "progress", H.style [("width", (toString progress) ++ "%" )] ] [],
+
+isPomodoroRunning : Model -> Bool
+isPomodoroRunning model =
+    isJust model.tPomodoroEnd
 
 -- VIEW
 view : Model -> Html Msg
@@ -91,17 +98,18 @@ view model =
     let progress = Maybe.withDefault 0.9999 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft)
     in
     div [H.class "content"] [
-       div [ onClick StartPomodoro, H.class "tomato" ] [
-           svgArc (progress * 12) 200,
-           div [ H.class "timer-wrapper" ] [
-               div [ H.class "timer" ] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
+       div ((if isPomodoroRunning(model) then [] else [onClick StartPomodoro])
+            ++ [H.classList [("pomodoro", True), ("notrunning", not (isPomodoroRunning model))]]) [
+           svgArc (isPomodoroRunning model) (progress * 12) 200,
+           div [ H.classList [("timer-wrapper", True), ("unselectable", True), ("notrunning", not (isPomodoroRunning model))] ] [
+               div [ H.class "timer unselectable" ] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
+           ],
+           div [H.classList [("buttons-lower", True), ("notrunning", not (isPomodoroRunning model))]] [
+               button [onClick ResetPomodoro] [ text "Reset Timer" ]
            ]
-       ]
-    --    div [] [
-    --        if isJust model.tPomodoroEnd then
-    --        button [onClick ResetPomodoro] [ text "Reset Timer" ]
-    --        else span [][]
-    --    ]
+       ],
+       div [H.class "completed-pomodoros"] 
+       (List.map (\i -> span [H.class "completed-pomodoro"] []) (List.range 1 model.completedPomodoros))
     ]
 
 type Msg
@@ -122,7 +130,7 @@ updateTick now model =
     in case secsLeft of
         Just secs ->
             if secs > 0 then ({model | secsLeft=secsLeft}, Cmd.none)
-            else ({model | secsLeft=Nothing, tPomodoroEnd=Nothing}, Audio.playSound "ring.ogg")
+            else ({model | secsLeft=Nothing, tPomodoroEnd=Nothing, completedPomodoros = model.completedPomodoros + 1}, Audio.playSound "ring.ogg")
         Nothing -> (model, Cmd.none)
 
 update : Msg -> Model -> (Model, Cmd Msg)
