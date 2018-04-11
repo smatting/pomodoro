@@ -10,6 +10,7 @@ import Path.LowLevel as LL exposing (Coordinate)
 import Time exposing (Time, now)
 import Maybe exposing (withDefault)
 import Task
+import Http
 
 import Audio
 
@@ -31,7 +32,7 @@ init =
     let model = 
         {tPomodoroEnd = Nothing,
          secsLeft = Nothing,
-         completedPomodoros = 0}
+         completedPomodoros = 10}
     in (model, Cmd.none)
 
 format2digits : Int -> String
@@ -66,17 +67,18 @@ isJust x =
                                     --  arcFlag = LL.SmallestArc,
                                     --  direction = LL.CounterClockwise,
 
-svgArc : Bool -> Float -> Float -> Html Msg
-svgArc running clock radius =
+svgArc : Bool ->  Float -> Html Msg
+svgArc running clock =
     let
+        radius = 240
         rad = -2.0 * pi * (clock / 12.0 + 0.75)
         x = radius * cos rad
         y = radius * -1.0 * sin rad + radius
         arcFlag = if clock < 6.0 then LL.SmallestArc else LL.LargestArc
         direction = LL.CounterClockwise
-        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 50),
+        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 10),
                                  drawtos = [LL.EllipticalArc LL.Relative [{
-                                     radii = (200, 200),
+                                     radii = (radius, radius),
                                      xAxisRotate = 0,
                                      arcFlag = arcFlag,
                                      direction = direction,
@@ -84,7 +86,7 @@ svgArc running clock radius =
                                  }]]}]
     in Svg.svg
        [S.id "progress-circle", S.width "500", S.height "500", S.viewBox "0 0 500 500", S.class (if running then "running" else "notrunning") ]
-       [Svg.path [d pathSpec, stroke "rgba(200,0,0,0.7)", fill "none", strokeWidth "10", strokeLinecap "round"] []]
+       [Svg.path [d pathSpec, stroke "rgba(200,0,0,0.6)", fill "none", strokeWidth "20", strokeLinecap "round"] []]
 
 -- span [ H.class "progress", H.style [("width", (toString progress) ++ "%" )] ] [],
 
@@ -92,24 +94,27 @@ isPomodoroRunning : Model -> Bool
 isPomodoroRunning model =
     isJust model.tPomodoroEnd
 
+        --    div [ H.classList [("timer-wrapper", True), ("unselectable", True), ("notrunning", not (isPomodoroRunning model))] ] [
+        --        div [ H.class "timer unselectable" ] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
+        --    ],
+
 -- VIEW
 view : Model -> Html Msg
 view model =
     let progress = Maybe.withDefault 0.9999 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft)
     in
     div [H.class "content"] [
+    --    button [onClick SlackStatusGet] [ text "Get Status" ],
        div ((if isPomodoroRunning(model) then [] else [onClick StartPomodoro])
             ++ [H.classList [("pomodoro", True), ("notrunning", not (isPomodoroRunning model))]]) [
-           svgArc (isPomodoroRunning model) (progress * 12) 200,
-           div [ H.classList [("timer-wrapper", True), ("unselectable", True), ("notrunning", not (isPomodoroRunning model))] ] [
-               div [ H.class "timer unselectable" ] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
-           ],
-           div [H.classList [("buttons-lower", True), ("notrunning", not (isPomodoroRunning model))]] [
-               button [onClick ResetPomodoro] [ text "Reset Timer" ]
-           ]
+           svgArc (isPomodoroRunning model) (progress * 12),
+           div [H.classList [("timer", True), ("unselectable", True), ("notrunning", not (isPomodoroRunning model))]] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
+       ],
+       div [H.classList [("buttons-lower", True), ("notrunning", not (isPomodoroRunning model))]] [
+           button [onClick ResetPomodoro] [ text "Cancel Pomodoro" ]
        ],
        div [H.class "completed-pomodoros"] 
-       (List.map (\i -> span [H.class "completed-pomodoro"] []) (List.range 1 model.completedPomodoros))
+           (List.map (\i -> span [H.class "completed-pomodoro"] []) (List.range 1 model.completedPomodoros))
     ]
 
 type Msg
@@ -117,6 +122,8 @@ type Msg
     | StartPomodoro
     | ResetPomodoro
     | Tick Time
+    | SlackStatusGet
+    | SlackStatusReponse (Result Http.Error String)
 
 setPomodoro : Time -> Msg
 setPomodoro now =
@@ -133,6 +140,15 @@ updateTick now model =
             else ({model | secsLeft=Nothing, tPomodoroEnd=Nothing, completedPomodoros = model.completedPomodoros + 1}, Audio.playSound "ring.ogg")
         Nothing -> (model, Cmd.none)
 
+authToken : String
+authToken = "xoxp-6579745568-341063591126-340390154465-cb6702f194d78856d48a3d900559a3a5"
+
+authHeader : Http.Header
+authHeader = Http.header "Authorization" ("Bearer " ++ authToken)
+
+urlProfileGet : String
+urlProfileGet = "https://slack.com/api/users.profile.get"
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
@@ -140,6 +156,8 @@ update msg model =
         StartPomodoro -> (model, Task.perform setPomodoro now)
         Tick now -> updateTick now model
         ResetPomodoro -> ({model | tPomodoroEnd = Nothing, secsLeft = Nothing}, Cmd.none)
+        SlackStatusGet -> (model, Http.send SlackStatusReponse (Http.getString urlProfileGet))
+        SlackStatusReponse res -> (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
