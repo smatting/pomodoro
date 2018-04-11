@@ -32,7 +32,7 @@ init =
     let model = 
         {tPomodoroEnd = Nothing,
          secsLeft = Nothing,
-         completedPomodoros = 10}
+         completedPomodoros = 0}
     in (model, Cmd.none)
 
 format2digits : Int -> String
