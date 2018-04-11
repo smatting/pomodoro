@@ -112,6 +112,7 @@ body {
 }
 
 .completed-pomodoros {
+    z-index: -1;
     height: 15vw;
     width: 100%;
     text-align: left;
