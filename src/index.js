@@ -11,7 +11,7 @@ require('purecss/build/pure-min.css');
 require('./main.css');
 require('./index.html');
 
-var notificationSound = require('./slow-spring-board.ogg');
+var notificationSound = require('../static/slow-spring-board.ogg');
 
 var Elm = require('./Main.elm');
 var mountNode = document.getElementById('main');

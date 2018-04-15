@@ -3,7 +3,7 @@ body {
     /* background-image: url('exclusive_paper_@2X.png'); */
     /* background-image: url('background.png'); */
     /* background-image: url('lukas-blazek-261682-unsplash.jpg'); */
-    background-image: url('chopping-board.jpg');
+    background-image: url('../static/chopping-board.jpg');
     background-size: 100%;
 
     /* background-image: url('lightpaperfibers_@2X.png'); */
@@ -40,7 +40,7 @@ body {
 
 
     background-repeat: no-repeat;
-    background-image: url("render.png");
+    background-image: url("../static/render.png");
     background-size: 100%;
 
     border-radius: 50%;
@@ -48,7 +48,7 @@ body {
 }
 
 .pomodoro.notrunning:active {
-    background-image: url("render.png");
+    background-image: url("../static/render.png");
     /* background-position: 0px -414px; */
     background-position: 0px bottom;
 }
@@ -155,7 +155,7 @@ body {
     /* background-color: red; */
     margin-left: 0.3vw;
 
-    background-image: url("render.png");
+    background-image: url("../static/render.png");
     background-size: 100%;
 }
 
