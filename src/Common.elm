@@ -10,7 +10,9 @@ type alias Model = {
     showSettings : Bool,
     authToken : Maybe String,
     backupStatus : Maybe Status,
-    status : Maybe Status
+    status : Maybe Status,
+    setPresence : Bool,
+    presence : Maybe Presence
 }
 
 type Msg
@@ -21,6 +23,7 @@ type Msg
     | ToggleSettings
     | UrlUpdate String
     | StatusUpdate (Maybe Status) (Maybe Status)
+    | PresenceUpdate Presence
     | Void     
 
 type alias Status = {
@@ -28,6 +31,8 @@ type alias Status = {
     emoji: String,
     expiration: Int
 }
+
+type Presence = Away | Auto
 
 pomodoroLength : Float
 pomodoroLength = 7 * Time.second

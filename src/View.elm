@@ -54,7 +54,9 @@ view model =
             div [] [text "text: ",
                     text (maybe "(Nothing)" (\status -> status.text) model.status)],
             div [] [text "emoji: ",
-                    text (maybe "(Nothing)" (\status -> status.emoji) model.status)]],
+                    text (maybe "(Nothing)" (\status -> status.emoji) model.status)],
+            div [] [text "set presence: ", text (toString model.setPresence)],
+            div [] [text "presence: ", text (toString model.presence)]],
 
        div ((if isPomodoroRunning(model)
              then []

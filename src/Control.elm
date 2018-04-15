@@ -28,6 +28,8 @@ init =
      authToken          = Nothing,
      backupStatus       = Nothing,
      status             = Nothing,
+     setPresence        = False,
+     presence           = Nothing,
      completedPomodoros = 0}
   in (model, External.getCurrentUrl ())
 
@@ -54,20 +56,6 @@ setPomodoro now =
 
 defaultTitle : String
 defaultTitle = "Pomodoro"
-
-updateTick : Time -> Model -> (Model, Cmd Msg)
-updateTick now model =
-  let secsLeft = Maybe.map (\tEnd -> tEnd - now) model.tPomodoroEnd
-  in case secsLeft of
-    Just secs ->
-      if secs > 0
-      then ({model | secsLeft=secsLeft},
-            External.title ((formatDuration secs) ++ " - " ++ defaultTitle))
-      else ({model | secsLeft=Nothing,
-                     tPomodoroEnd=Nothing,
-                     completedPomodoros=model.completedPomodoros + 1},
-            Cmd.batch [External.title defaultTitle, Audio.playSound "ring.ogg", maybeRestoreStatus model])
-    Nothing -> (model, External.title defaultTitle)
 
 emptyQuery : Query
 emptyQuery = Erl.Query.parse ""
@@ -96,10 +84,23 @@ setStatusUrl authToken status =
         query   = emptyQuery |> Erl.Query.set "profile" profile
     in slackUrl authToken "users.profile.set" (Just query)
 
-getAuthToken : String -> Maybe String
-getAuthToken s =
+setPresenceUrl : String -> Presence -> String
+setPresenceUrl authToken presence =
+    let p     = case presence of
+                  Auto -> "auto"
+                  Away -> "away"
+        query = emptyQuery |> Erl.Query.set "presence" p
+    in slackUrl authToken "users.setPresence" (Just query)
+
+getAuthTokenFromUrl : String -> Maybe String
+getAuthTokenFromUrl s =
     let l = (Erl.parse s).query |> Erl.Query.getValuesForKey "token"
     in List.head l
+
+getAwaySettingFromUrl : String -> Bool
+getAwaySettingFromUrl s =
+    let l = (Erl.parse s).query |> Erl.Query.getValuesForKey "setPresence"
+    in Maybe.withDefault False <| Maybe.map (\s -> s == "true") (List.head l)
 
 getSetStatusTask : String -> Status -> Task Http.Error (Status, Status)
 getSetStatusTask authToken targetStatus =
@@ -116,7 +117,6 @@ getSetStatusTask authToken targetStatus =
       |> Http.toTask
     |> Task.map (\status -> (backupStatus, status)))
 
-
 setStatusTask : String -> Status -> Task Http.Error Status
 setStatusTask authToken targetStatus =
     Http.post
@@ -124,6 +124,19 @@ setStatusTask authToken targetStatus =
       Http.emptyBody
       decodeStatus
     |> Http.toTask
+
+setPresence : String -> Presence -> Cmd Msg
+setPresence authToken presence =
+  Task.attempt
+      (\result ->
+        case result of
+          Ok presence -> PresenceUpdate presence
+          Err err     -> Void)
+      (Http.post
+        (setPresenceUrl authToken presence)
+        Http.emptyBody
+        (Decode.succeed presence)
+      |> Http.toTask)
 
 getSetStatus : String -> Status -> Cmd Msg
 getSetStatus authToken status =
@@ -165,23 +178,53 @@ maybeRestoreStatus model =
     (\(authToken, status) -> setStatus authToken status)
     (maybePair model.authToken model.backupStatus)
 
+maybeSetPresence : Model -> Presence -> Cmd Msg
+maybeSetPresence model presence =
+  maybeCmd
+    (\authToken ->
+     if model.setPresence
+       then setPresence authToken presence
+       else Cmd.none)
+    model.authToken
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     SetTPomodoro t secsLeft          -> ({model | tPomodoroEnd = Just t, secsLeft = Just secsLeft},
-                                         model.authToken |> maybeCmd (\authToken ->
-                                           getSetStatus authToken (pomodoroStatus t)))
+                                         Cmd.batch [model.authToken |> maybeCmd (\authToken ->
+                                                      getSetStatus authToken (pomodoroStatus t)),
+                                                    maybeSetPresence model Away])
     StartPomodoro                    -> (model, Task.perform setPomodoro now)
     Tick now                         -> updateTick now model
     ResetPomodoro                    -> ({model | tPomodoroEnd = Nothing, secsLeft = Nothing},
                                          Cmd.batch [External.title defaultTitle,
-                                                    maybeRestoreStatus model])
+                                                    maybeRestoreStatus model,
+                                                    maybeSetPresence model Auto])
     ToggleSettings                   -> ({model | showSettings = not model.showSettings}, Cmd.none)
-    UrlUpdate url                    -> ({model | authToken = getAuthToken url}, Cmd.none)
+    UrlUpdate url                    -> ({model | authToken = getAuthTokenFromUrl url,
+                                                  setPresence = getAwaySettingFromUrl url}, Cmd.none)
     Void                             -> (model, Cmd.none)
     StatusUpdate backupStatus status -> ({model | backupStatus = maybeOverride model.backupStatus backupStatus,
                                                   status = maybeOverride model.status status},
                                          Cmd.none)
+    PresenceUpdate presence          -> ({model | presence = Just presence}, Cmd.none)
+
+updateTick : Time -> Model -> (Model, Cmd Msg)
+updateTick now model =
+  let secsLeft = Maybe.map (\tEnd -> tEnd - now) model.tPomodoroEnd
+  in case secsLeft of
+    Just secs ->
+      if secs > 0
+      then ({model | secsLeft = secsLeft},
+            External.title ((formatDuration secs) ++ " - " ++ defaultTitle))
+      else ({model | secsLeft = Nothing,
+                     tPomodoroEnd = Nothing,
+                     completedPomodoros=model.completedPomodoros + 1},
+            Cmd.batch [External.title defaultTitle,
+                       Audio.playSound "ring.ogg",
+                       maybeRestoreStatus model,
+                       maybeSetPresence model Auto])
+    Nothing -> (model, External.title defaultTitle)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
