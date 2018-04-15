@@ -12,61 +12,67 @@ import Common exposing (..)
 
 svgArc : Bool ->  Float -> Html Msg
 svgArc running clock =
-    let
-        radius = 240
-        rad = -2.0 * pi * (clock / 12.0 + 0.75)
-        x = radius * cos rad
-        y = radius * -1.0 * sin rad + radius
-        arcFlag = if clock < 6.0 then LL.SmallestArc else LL.LargestArc
-        direction = LL.CounterClockwise
-        pathSpec = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 10),
-                                 drawtos = [LL.EllipticalArc LL.Relative [{
-                                     radii = (radius, radius),
-                                     xAxisRotate = 0,
-                                     arcFlag = arcFlag,
-                                     direction = direction,
-                                     target = (x, y)
-                                 }]]}]
-    in Svg.svg
-       [S.id "progress-circle", S.width "500", S.height "500", S.viewBox "0 0 500 500", S.class (if running then "running" else "notrunning") ]
-       [Svg.path [d pathSpec, stroke "rgba(200,0,0,0.6)", fill "none", strokeWidth "20", strokeLinecap "round"] []]
+  let
+    radius    = 240
+    rad       = -2.0 * pi * (clock / 12.0 + 0.75)
+    x         = radius * cos rad
+    y         = radius * -1.0 * sin rad + radius
+    arcFlag   = if clock < 6.0 then LL.SmallestArc else LL.LargestArc
+    direction = LL.CounterClockwise
+    pathSpec  = LL.toString [{moveto = LL.MoveTo LL.Absolute (250, 10),
+                              drawtos = [LL.EllipticalArc
+                                         LL.Relative
+                                         [{radii = (radius, radius),
+                                           xAxisRotate = 0,
+                                           arcFlag = arcFlag,
+                                           direction = direction,
+                                           target = (x, y)}]]}]
+  in Svg.svg
+     [S.id "progress-circle",
+      S.width "500",
+      S.height "500",
+      S.viewBox "0 0 500 500",
+      S.class (if running then "running" else "notrunning") ]
+     [Svg.path [d pathSpec,
+                stroke "rgba(200,0,0,0.6)",
+                fill "none",
+                strokeWidth "20",
+                strokeLinecap "round"] []]
 
-
-
--- VIEW
 view : Model -> Html Msg
 view model =
-    let progress = Maybe.withDefault 0.9999 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft)
-    in
-    div [H.class "content"] [
-        -- button [ H.class "pure-button",  onClick ToggleSettings ] [ text "toggle settings" ],
-        -- viewSettings model,
-        div [ H.class "debug-window"] [
-            div [] [text "Backup Status"],
-            div [] [
-                text "text: ",
-                text (maybe "(Nothing)" (\status -> status.text) model.backupStatus)],
-            div [] [
-                text "emoji: ",
-                text (maybe "(Nothing)" (\status -> status.emoji) model.backupStatus)],
+  let progress = Maybe.withDefault 0.9999 (Maybe.map (\s -> 1 - s / pomodoroLength) model.secsLeft)
+  in
+  div [H.class "content"]
+      [div [H.class "debug-window"]
+           [div [] [text "Backup Status"],
+            div [] [text "text: ",
+                    text (maybe "(Nothing)" (\status -> status.text) model.backupStatus)],
+            div [] [text "emoji: ",
+                    text (maybe "(Nothing)" (\status -> status.emoji) model.backupStatus)],
             div [] [text "Slack Status"],
-            div [] [
-                text "text: ",
-                text (maybe "(Nothing)" (\status -> status.text) model.status)],
-            div [] [
-                text "emoji: ",
-                text (maybe "(Nothing)" (\status -> status.emoji) model.status)]
-        ],
-        div ((if isPomodoroRunning(model) then [] else [onClick StartPomodoro])
-             ++ [H.classList [("pomodoro", True), ("notrunning", not (isPomodoroRunning model))]]) [
-            svgArc (isPomodoroRunning model) (progress * 12),
-            div [H.classList [("timer", True), ("unselectable", True), ("notrunning", not (isPomodoroRunning model))]] [(text (formatMillis (withDefault pomodoroLength model.secsLeft)))]
-        ],
-        div [H.classList [("buttons-lower", True), ("notrunning", not (isPomodoroRunning model))]] [
+            div [] [text "text: ",
+                    text (maybe "(Nothing)" (\status -> status.text) model.status)],
+            div [] [text "emoji: ",
+                    text (maybe "(Nothing)" (\status -> status.emoji) model.status)]],
 
-           button [H.class "pure-button cancel-button", onClick ResetPomodoro]
-                  [ Html.i [H.class "fa fa-cog"] [], text "Cancel Pomodoro" ]
-       ],
-       div [H.class "completed-pomodoros"] 
-           (List.map (\i -> span [H.class "completed-pomodoro"] []) (List.range 1 model.completedPomodoros))
-    ]
+       div ((if isPomodoroRunning(model)
+             then []
+             else [onClick StartPomodoro])
+            ++ [H.classList [("pomodoro", True),
+                             ("notrunning", not (isPomodoroRunning model))]])
+           [svgArc (isPomodoroRunning model) (progress * 12),
+            div [H.classList [("timer", True),
+                              ("unselectable", True),
+                              ("notrunning", not (isPomodoroRunning model))]]
+                [(text (formatDuration (withDefault pomodoroLength model.secsLeft)))]],
+
+        div [H.classList [("buttons-lower", True),
+                          ("notrunning", not (isPomodoroRunning model))]]
+            [button [H.class "pure-button cancel-button", onClick ResetPomodoro]
+                    [Html.i [H.class "fa fa-cog"] [],
+                     text "Cancel Pomodoro" ]],
+
+        div [H.class "completed-pomodoros"] 
+            (List.map (\i -> span [H.class "completed-pomodoro"] [])
+                      (List.range 1 model.completedPomodoros))]

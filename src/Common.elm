@@ -1,5 +1,7 @@
 module Common exposing (..)
 import Time exposing (Time, now)
+import Strftime exposing (format)
+import Date
 
 type alias Model = {
     tPomodoroEnd : Maybe Time,
@@ -18,8 +20,7 @@ type Msg
     | Tick Time
     | ToggleSettings
     | UrlUpdate String
-    | BackupStatusUpdate Status
-    | StatusUpdate Status Status
+    | StatusUpdate (Maybe Status) (Maybe Status)
     | Void     
 
 type alias Status = {
@@ -28,10 +29,8 @@ type alias Status = {
     expiration: Int
 }
 
-
 pomodoroLength : Float
-pomodoroLength = 25 * Time.minute
--- pomodoroLength = 2 * Time.second
+pomodoroLength = 7 * Time.second
 
 isPomodoroRunning : Model -> Bool
 isPomodoroRunning model =
@@ -49,15 +48,27 @@ maybe default f m =
         Just v -> f v
         Nothing -> default
 
-
-formatMillis : Float -> String
-formatMillis dt =
-    let n = ceiling (dt / 1000.0)
-        minutes = n // 60
-        seconds = n % 60
-    in (format2digits minutes) ++ ":" ++ (format2digits seconds)
-
-format2digits : Int -> String
-format2digits n =
-    if n < 10 then "0" ++ (toString n)
+format2digits : Int -> String -> String
+format2digits n filling =
+    if n < 10 then filling ++ (toString n)
     else toString n 
+
+formatDuration : Float -> String
+formatDuration dt =
+    let secsTotal = ceiling (dt / 1000.0)
+        minutes   = secsTotal // 60
+        seconds   = secsTotal % 60
+    in (format2digits minutes " ") ++ ":" ++ (format2digits seconds "0")
+
+formatDurationMinutes : Float -> String
+formatDurationMinutes dt =
+    let secsTotal = ceiling (dt / 1000.0)
+        minutes   = secsTotal // 60
+        seconds   = secsTotal % 60
+        mins      = minutes + (if seconds > 10 then 1 else 0)
+    in toString mins ++ "m"
+
+formatTime : Time -> String
+formatTime time =
+  let date = Date.fromTime time
+  in format "%H:%M" date

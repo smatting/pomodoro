@@ -12,64 +12,62 @@ import External
 
 import Common exposing (..)
 
-
 -- MODEL
-pomodoroStatus : Status
-pomodoroStatus = {
-    text = "Pomdoro!",
-    emoji = ":tomato:",
-    expiration = 0}
+pomodoroStatus : Time -> Status
+pomodoroStatus tEnd =
+  let ft  = formatTime tEnd
+      text = "back at " ++ ft
+  in {text = text, emoji = ":tomato:", expiration = 0}
 
 init : (Model, Cmd Msg)
 init =
-    let model = 
-        {tPomodoroEnd = Nothing,
-         secsLeft = Nothing,
-         showSettings = False,
-         authToken = Nothing,
-         backupStatus = Nothing,
-         status = Nothing,
-         completedPomodoros = 0}
-    in (model, External.getCurrentUrl ())
+  let model = 
+    {tPomodoroEnd       = Nothing,
+     secsLeft           = Nothing,
+     showSettings       = False,
+     authToken          = Nothing,
+     backupStatus       = Nothing,
+     status             = Nothing,
+     completedPomodoros = 0}
+  in (model, External.getCurrentUrl ())
 
 decodeStatus : Decode.Decoder Status
 decodeStatus =
-    Decode.at ["profile"] (
-        let text = Decode.at ["status_text"] Decode.string
-            emoji = Decode.at ["status_emoji"] Decode.string
-            expiration = Decode.at ["status_expiration"] Decode.int
-        in
-            Decode.map3 Status text emoji expiration
-    )
-
+  Decode.at ["profile"] <| 
+    let text       = Decode.at ["status_text"] Decode.string
+        emoji      = Decode.at ["status_emoji"] Decode.string
+        expiration = Decode.at ["status_expiration"] Decode.int
+    in Decode.map3 Status text emoji expiration
+    
 encodeStatus : Status -> String
 encodeStatus status =
-    Encode.encode 0
-        (Encode.object [
-            ("status_text", Encode.string status.text),
-            ("status_emoji", Encode.string status.emoji )
-        ])
+  Encode.encode 0 <|
+    Encode.object [
+      ("status_text", Encode.string status.text),
+      ("status_emoji", Encode.string status.emoji)]
 
 setPomodoro : Time -> Msg
 setPomodoro now =
-    let secsLeft = pomodoroLength
-        t = now + secsLeft
-    in SetTPomodoro t secsLeft
+  let secsLeft = pomodoroLength
+      t        = now + secsLeft
+  in SetTPomodoro t secsLeft
 
 defaultTitle : String
 defaultTitle = "Pomodoro"
 
 updateTick : Time -> Model -> (Model, Cmd Msg)
 updateTick now model =
-    let secsLeft = Maybe.map (\tEnd -> tEnd - now) model.tPomodoroEnd
-    in case secsLeft of
-        Just secs ->
-            if secs > 0 then ({model | secsLeft=secsLeft}, External.title ((formatMillis secs) ++ " - " ++ defaultTitle))
-            else ({model | secsLeft=Nothing, tPomodoroEnd=Nothing, completedPomodoros = model.completedPomodoros + 1}, Cmd.batch [External.title defaultTitle, Audio.playSound "ring.ogg"])
-        Nothing -> (model, External.title defaultTitle)
-
-authHeader : String -> Http.Header
-authHeader authToken = Http.header "Authorization" ("Bearer " ++ authToken)
+  let secsLeft = Maybe.map (\tEnd -> tEnd - now) model.tPomodoroEnd
+  in case secsLeft of
+    Just secs ->
+      if secs > 0
+      then ({model | secsLeft=secsLeft},
+            External.title ((formatDuration secs) ++ " - " ++ defaultTitle))
+      else ({model | secsLeft=Nothing,
+                     tPomodoroEnd=Nothing,
+                     completedPomodoros=model.completedPomodoros + 1},
+            Cmd.batch [External.title defaultTitle, Audio.playSound "ring.ogg", maybeRestoreStatus model])
+    Nothing -> (model, External.title defaultTitle)
 
 emptyQuery : Query
 emptyQuery = Erl.Query.parse ""
@@ -81,9 +79,9 @@ slackUrl authToken path_ mQuery =
         url =
             { url_ |
               protocol = "https"
-            , host = ["slack.com"] 
-            , query = query
-            , path = ["api"] }
+            , host     = ["slack.com"] 
+            , query    = query
+            , path     = ["api"] }
                 |> Erl.appendPathSegments [path_]
                 |> Erl.addQuery "token" authToken
                 in Erl.toString url
@@ -94,23 +92,17 @@ getStatusUrl authToken =
 
 setStatusUrl : String -> Status -> String
 setStatusUrl authToken status =
-    let profile   = status |> encodeStatus
-        query = emptyQuery |> Erl.Query.set "profile" profile
+    let profile = status |> encodeStatus
+        query   = emptyQuery |> Erl.Query.set "profile" profile
     in slackUrl authToken "users.profile.set" (Just query)
-
-handleGetStatusResponse : Result Http.Error Status -> Msg
-handleGetStatusResponse result =
-    case result of
-        Ok status -> Debug.log ("hahaha" ++ (toString status)) (BackupStatusUpdate status)
-        Err err -> Debug.log ("Errow while getting status: " ++ toString err) Void
 
 getAuthToken : String -> Maybe String
 getAuthToken s =
     let l = (Erl.parse s).query |> Erl.Query.getValuesForKey "token"
     in List.head l
 
-setStatusTask : String -> Task Http.Error (Status, Status)
-setStatusTask authToken =
+getSetStatusTask : String -> Status -> Task Http.Error (Status, Status)
+getSetStatusTask authToken targetStatus =
     Http.get
       (getStatusUrl authToken)
       decodeStatus
@@ -118,35 +110,78 @@ setStatusTask authToken =
     |> andThen
     (\backupStatus ->
       Http.post
-        (setStatusUrl authToken pomodoroStatus)
+        (setStatusUrl authToken targetStatus)
         Http.emptyBody
         decodeStatus
       |> Http.toTask
-      |> Task.map (\status -> (backupStatus, status)))
+    |> Task.map (\status -> (backupStatus, status)))
+
+
+setStatusTask : String -> Status -> Task Http.Error Status
+setStatusTask authToken targetStatus =
+    Http.post
+      (setStatusUrl authToken targetStatus)
+      Http.emptyBody
+      decodeStatus
+    |> Http.toTask
+
+getSetStatus : String -> Status -> Cmd Msg
+getSetStatus authToken status =
+  Task.attempt
+      (\result ->
+        case result of
+          Ok (b, s) -> StatusUpdate (Just b) (Just s)
+          Err err   -> Void)
+      (getSetStatusTask authToken status)
+
+setStatus : String -> Status -> Cmd Msg
+setStatus authToken status =
+  Task.attempt
+      (\result ->
+        case result of
+          Ok status -> StatusUpdate Nothing (Just status)
+          Err err   -> Void)
+      (setStatusTask authToken status)
+
+maybeOverride : Maybe a -> Maybe a -> Maybe a
+maybeOverride default maybeValue =
+  case maybeValue of
+    Nothing -> default
+    Just x  -> Just x
+  
+maybeCmd : (a -> Cmd msg) -> Maybe a -> Cmd msg
+maybeCmd f m =
+  Maybe.withDefault
+    Cmd.none
+    (Maybe.map f m)
+
+maybePair : Maybe a -> Maybe b -> Maybe (a, b)
+maybePair ma mb =
+  Maybe.map2 (\a b -> (a, b)) ma mb
+
+maybeRestoreStatus : Model -> Cmd Msg
+maybeRestoreStatus model =
+  maybeCmd
+    (\(authToken, status) -> setStatus authToken status)
+    (maybePair model.authToken model.backupStatus)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-    case msg of
-        SetTPomodoro t secsLeft ->
-          ({model | tPomodoroEnd = Just t, secsLeft = Just secsLeft},
-           model.authToken
-           |> maybe
-                Cmd.none
-                (\authToken ->
-                  Task.attempt (\result ->
-                      case result of
-                        Ok (b, s) -> StatusUpdate b s
-                        Err err   -> Void)
-                    (setStatusTask authToken)))
-        StartPomodoro -> (model, Task.perform setPomodoro now)
-        Tick now -> updateTick now model
-        ResetPomodoro -> ({model | tPomodoroEnd = Nothing, secsLeft = Nothing}, External.title defaultTitle)
-        ToggleSettings -> ({model | showSettings = not model.showSettings}, Cmd.none)
-        UrlUpdate url ->  ({model | authToken = getAuthToken url}, Cmd.none)
-        BackupStatusUpdate status ->  ({model | backupStatus = Just status}, Cmd.none)
-        Void -> (model, Cmd.none)
-        StatusUpdate backupStatus status -> ({model | backupStatus = Just backupStatus, status = Just status}, Cmd.none)
-
+  case msg of
+    SetTPomodoro t secsLeft          -> ({model | tPomodoroEnd = Just t, secsLeft = Just secsLeft},
+                                         model.authToken |> maybeCmd (\authToken ->
+                                           getSetStatus authToken (pomodoroStatus t)))
+    StartPomodoro                    -> (model, Task.perform setPomodoro now)
+    Tick now                         -> updateTick now model
+    ResetPomodoro                    -> ({model | tPomodoroEnd = Nothing, secsLeft = Nothing},
+                                         Cmd.batch [External.title defaultTitle,
+                                                    maybeRestoreStatus model])
+    ToggleSettings                   -> ({model | showSettings = not model.showSettings}, Cmd.none)
+    UrlUpdate url                    -> ({model | authToken = getAuthToken url}, Cmd.none)
+    Void                             -> (model, Cmd.none)
+    StatusUpdate backupStatus status -> ({model | backupStatus = maybeOverride model.backupStatus backupStatus,
+                                                  status = maybeOverride model.status status},
+                                         Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
