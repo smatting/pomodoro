@@ -23,3 +23,11 @@ app.ports.playSound.subscribe(function(soundFile) {
     var audio = new Audio(notificationSound);
     audio.play();
 });
+
+app.ports.getCurrentUrl.subscribe(function() {
+    app.ports.currentUrl.send(window.location.href);
+});
+
+app.ports.title.subscribe(function(title) {
+    document.title = title;
+});
