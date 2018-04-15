@@ -12,7 +12,8 @@ type alias Model = {
     backupStatus : Maybe Status,
     status : Maybe Status,
     setPresence : Bool,
-    presence : Maybe Presence
+    presence : Maybe Presence,
+    cookies : Maybe String
 }
 
 type Msg
@@ -24,6 +25,7 @@ type Msg
     | UrlUpdate String
     | StatusUpdate (Maybe Status) (Maybe Status)
     | PresenceUpdate Presence
+    | CookieUpdate String
     | Void     
 
 type alias Status = {
@@ -35,7 +37,8 @@ type alias Status = {
 type Presence = Away | Auto
 
 pomodoroLength : Float
-pomodoroLength = 7 * Time.second
+-- pomodoroLength = 7 * Time.second
+pomodoroLength = 25 * Time.minute
 
 isPomodoroRunning : Model -> Bool
 isPomodoroRunning model =

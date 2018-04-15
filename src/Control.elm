@@ -9,6 +9,10 @@ import Erl exposing (Query)
 import Erl.Query 
 import Audio
 import External
+import Dict exposing (Dict)
+import String
+import List exposing (head, tail)
+import Maybe exposing (withDefault)
 
 import Common exposing (..)
 
@@ -30,8 +34,9 @@ init =
      status             = Nothing,
      setPresence        = False,
      presence           = Nothing,
+     cookies            = Nothing,
      completedPomodoros = 0}
-  in (model, External.getCurrentUrl ())
+  in (model, Cmd.batch [External.getCurrentUrl (), External.getCookies ()])
 
 decodeStatus : Decode.Decoder Status
 decodeStatus =
@@ -208,6 +213,7 @@ update msg model =
                                                   status = maybeOverride model.status status},
                                          Cmd.none)
     PresenceUpdate presence          -> ({model | presence = Just presence}, Cmd.none)
+    CookieUpdate cookies             -> (handleCookies cookies model, Cmd.none)
 
 updateTick : Time -> Model -> (Model, Cmd Msg)
 updateTick now model =
@@ -226,10 +232,15 @@ updateTick now model =
                        maybeSetPresence model Auto])
     Nothing -> (model, External.title defaultTitle)
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    let listenUrl = External.currentUrl (\s -> UrlUpdate s)
-    in
-    case model.tPomodoroEnd of
-        Just t -> Sub.batch [ Time.every (0.1 * Time.second) Tick, listenUrl ]
-        Nothing -> listenUrl 
+parseCookies : String -> Dict String String
+parseCookies s =
+  let l     = String.split ";" s
+      parts = List.map (\ps -> let pair = String.split "=" ps in (withDefault "" <| head pair, withDefault "" <| head (withDefault [] <| tail pair))) l
+  in Dict.fromList parts
+
+handleCookies : String -> Model -> Model
+handleCookies s model =
+  let cookies = parseCookies s
+  in if Dict.member "token" cookies
+     then {model | authToken = Just <| Maybe.withDefault "" (Dict.get "token" cookies)}
+     else model
