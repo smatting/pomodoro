@@ -37,8 +37,8 @@ type alias Status = {
 type Presence = Away | Auto
 
 pomodoroLength : Float
-pomodoroLength = 7 * Time.second
--- pomodoroLength = 25 * Time.minute
+-- pomodoroLength = 7 * Time.second
+pomodoroLength = 25 * Time.minute
 
 isPomodoroRunning : Model -> Bool
 isPomodoroRunning model =
