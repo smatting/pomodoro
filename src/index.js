@@ -33,7 +33,5 @@ app.ports.title.subscribe(function(title) {
 });
 
 app.ports.getCookies.subscribe(function() {
-    console.log('getCookies()');
-    console.log(document.cookie);
     app.ports.cookies.send(document.cookie);
 });
