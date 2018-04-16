@@ -1,6 +1,6 @@
 module View exposing (..)
 
-import Html exposing (Html, button, div, text, program, span, a, img)
+import Html exposing (Html, button, div, text, program, span, a, img, iframe)
 import Html.Events exposing (onClick, on, onWithOptions, onInput)
 import Html.Attributes as H exposing (..)
 import Svg
@@ -62,6 +62,7 @@ view model =
 --             div [] [text "authToken: ", text <| toString <| model.authToken]
 --             ],
         
+       githubButton,
        if (isJust model.authToken) then (span [] []) else slackButton,
 
        div ((if isPomodoroRunning(model)
@@ -87,6 +88,16 @@ view model =
 
 slackButton : Html Msg
 slackButton =
-  a [(H.href "https://slack.com/oauth/authorize?client_id=6579745568.340832914387&scope=users.profile:write,users.profile:read,users:write")] [
+  a [H.href "https://slack.com/oauth/authorize?client_id=6579745568.340832914387&scope=users.profile:write,users.profile:read,users:write", H.class "slack-button"] [
     img [H.alt "Add to Slack", H.height 40, H.width 139, H.src "https://platform.slack-edge.com/img/add_to_slack.png"] []
   ]  
+
+githubButton : Html Msg
+githubButton =
+  iframe [H.src "https://ghbtns.com/github-btn.html?user=smatting&repo=pomodoro&type=star&count=true&size=large",
+          H.attribute "frameborder" "0",
+          H.attribute "scrolling" "0",
+          H.class "github-button",
+          H.width 160,
+          H.height 30]
+          []

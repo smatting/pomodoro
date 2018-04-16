@@ -237,3 +237,15 @@ body {
     background: white;
     padding: 20px;
 }
+
+.github-button {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+
+.slack-button {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+}
