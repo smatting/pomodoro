@@ -2,6 +2,11 @@ A simple pomdodoro technique timer with Slack support.
 
 Live at [www.smxg.net/pomodoro](http://www.smxg.net/pomodoro)
 
+## TODO
+* notifications
+* save state
+* log
+
 #### Tomato picture
 
 https://commons.wikimedia.org/wiki/File:Bright_red_tomato_and_cross_section02.jpg
