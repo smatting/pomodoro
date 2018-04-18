@@ -1,3 +1,9 @@
+# Feature requests
+
+* Make cookie live longer!
+* Add DND
+* Add text box that describes the pomodoro. Tag the pomodoros. Maybe logbook style.
+
 A simple pomdodoro technique timer with Slack support.
 
 Live at [www.smxg.net/pomodoro](http://www.smxg.net/pomodoro)
