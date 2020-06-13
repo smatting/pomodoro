@@ -6,7 +6,7 @@
 
 A simple pomdodoro technique timer with Slack support.
 
-[Live Demo](http://smatting.github.io/pomodoro/) (wwithout slack integration)
+[Live Demo](http://smatting.github.io/pomodoro/) (without slack integration)
 
 
 ## TODO
