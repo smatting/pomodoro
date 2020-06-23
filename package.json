@@ -9,7 +9,7 @@
     "elm-webpack-loader": "^4.2.0",
     "file-loader": "^0.10.0",
     "font-awesome": "4",
-    "foreman": "^2.0.0",
+    "foreman": "^3.0.1",
     "json-server": "0.9.5",
     "purecss": "^1.0.0",
     "style-loader": "^0.13.1",
